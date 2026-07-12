@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticate, getProfile, requestVerification, verifyEmailToken } = require('../services/authService');
+const { authenticate, getProfile } = require('../services/authService');
 const { verifyToken } = require('../middlewares/verifyToken');
 
 const authRouter = express.Router();
@@ -45,29 +45,6 @@ authRouter.post('/logout', (req, res) => {
     ...clearAuthCookieOptions,
   });
   res.status(200).json({ message: 'Logout successful' });
-});
-
-authRouter.post('/send-verification', async (req, res, next) => {
-  try {
-    const { email } = req.body;
-    const result = await requestVerification(email);
-    res.status(200).json({ message: 'Verification email sent', result });
-  } catch (err) {
-    next(err);
-  }
-});
-
-authRouter.get('/verify', async (req, res) => {
-  try {
-    const { token } = req.query;
-    await verifyEmailToken(token);
-    // Redirect to frontend login page with success flag
-    res.redirect('http://localhost:5173/login?verified=true');
-  } catch (err) {
-    console.error('Verification Error:', err.message);
-    const encodedError = encodeURIComponent(err.message || 'Verification failed');
-    res.redirect(`http://localhost:5173/login?error=${encodedError}`);
-  }
 });
 
 module.exports = { authRouter };
