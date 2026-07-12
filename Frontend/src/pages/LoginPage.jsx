@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 
 export function LoginPage() {
@@ -65,10 +65,6 @@ export function LoginPage() {
             {loading ? 'Signing in...' : 'Login'}
           </button>
         </div>
-
-        <p>
-          New here? <Link to="/register">Create an account</Link>
-        </p>
       </form>
     </div>
   )

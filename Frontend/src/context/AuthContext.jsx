@@ -43,11 +43,6 @@ export function AuthProvider({ children }) {
     return response.data.payload.user
   }
 
-  async function register(values) {
-    const response = await api.post('/auth/register', values)
-    return response.data.payload
-  }
-
   async function logout() {
     await api.post('/auth/logout')
     localStorage.removeItem('authToken')
@@ -55,7 +50,7 @@ export function AuthProvider({ children }) {
   }
 
   const value = useMemo(
-    () => ({ user, setUser, loading, login, register, logout, isAuthenticated: Boolean(user) }),
+    () => ({ user, setUser, loading, login, logout, isAuthenticated: Boolean(user) }),
     [loading, user],
   )
 

@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticate, getProfile, register } = require('../services/authService');
+const { authenticate, getProfile } = require('../services/authService');
 const { verifyToken } = require('../middlewares/verifyToken');
 
 const authRouter = express.Router();
@@ -18,15 +18,6 @@ const clearAuthCookieOptions = {
   sameSite: isProduction ? 'none' : 'lax',
   secure: isProduction,
 };
-
-authRouter.post('/register', async (req, res, next) => {
-  try {
-    const payload = await register(req.body);
-    res.status(201).json({ message: 'Registration successful', payload });
-  } catch (err) {
-    next(err);
-  }
-});
 
 authRouter.post('/login', async (req, res, next) => {
   try {
