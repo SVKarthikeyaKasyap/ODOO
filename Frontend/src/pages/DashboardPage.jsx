@@ -14,14 +14,19 @@ export function DashboardPage() {
     }
   }
 
+  // Supporting both capitalized and lowercase fields from Supabase
+  const displayName = user ? (user.Name || user.name || 'User') : ''
+  const displayEmail = user ? (user.Email || user.email || '') : ''
+  const displayRole = user ? (user.Role || user.role || '') : ''
+
   return (
     <div>
       <h2>Dashboard (TransitOps)</h2>
       {user ? (
         <div>
-          <p><strong>Welcome back, {user.name}!</strong></p>
-          <p><strong>Email:</strong> {user.email}</p>
-          <p><strong>Role:</strong> {user.role}</p>
+          <p><strong>Welcome back, {displayName}!</strong></p>
+          <p><strong>Email:</strong> {displayEmail}</p>
+          <p><strong>Role:</strong> {displayRole}</p>
           <button onClick={handleLogout}>Logout</button>
         </div>
       ) : (

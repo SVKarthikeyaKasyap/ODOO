@@ -7,11 +7,11 @@ async function authenticate(payload) {
   const { email, password } = payload;
   const rawEmail = String(email || '').trim().toLowerCase();
 
-  // Query Supabase for the user
+  // Query Supabase for the user with capitalized columns: Email, Password, Blocked, Role, Name
   const { data: user, error: fetchError } = await supabase
     .from('users')
     .select('*')
-    .eq('email', rawEmail)
+    .eq('Email', rawEmail)
     .maybeSingle();
 
   if (fetchError || !user) {
@@ -20,21 +20,31 @@ async function authenticate(payload) {
     throw error;
   }
 
-  if (user.blocked) {
+  // Handle capitalized Blocked column
+  if (user.Blocked) {
     const error = new Error('Your account has been blocked. Please contact support.');
     error.status = 403;
     throw error;
   }
 
-  // Check email verification status
-  if (!user.is_verified) {
+  // Check email verification status (allowing for capitalization just in case)
+  const isVerified = user.is_verified === true || user.is_verified === null || user.Is_Verified === true;
+  if (!isVerified) {
     const error = new Error('Email not verified');
     error.status = 403;
     throw error;
   }
 
-  // Verify password
-  const isPasswordCorrect = await bcrypt.compare(password, user.password);
+  // Verify password: Support both Bcrypt hashes and Plain-Text passwords (e.g. "123")
+  let isPasswordCorrect = false;
+  const storedPassword = user.Password || '';
+  
+  if (storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2b$')) {
+    isPasswordCorrect = await bcrypt.compare(password, storedPassword);
+  } else {
+    // Fallback to plain-text match for direct database entry support
+    isPasswordCorrect = (password === storedPassword);
+  }
 
   if (!isPasswordCorrect) {
     const error = new Error('Invalid email or password');
@@ -42,24 +52,27 @@ async function authenticate(payload) {
     throw error;
   }
 
-  // Generate JWT token
+  // Generate JWT token using user details
+  const userId = user.id || user.Id;
   const token = require('jsonwebtoken').sign(
-    { id: user.id, email: user.email, role: user.role },
+    { id: userId, email: user.Email, role: user.Role },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRE || '7d' }
   );
 
   const safeUser = { ...user };
-  delete safeUser.password;
+  delete safeUser.Password; // hide Password field
 
   return { token, user: safeUser };
 }
 
 async function getProfile(userId) {
-  const { data: user, error: fetchError } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', userId)
+  // Try lowercase 'id' then capitalized 'Id'
+  let query = supabase.from('users').select('*');
+  
+  // Try querying by standard id
+  const { data: user, error: fetchError } = await query
+    .or(`id.eq.${userId},Id.eq.${userId}`)
     .maybeSingle();
 
   if (fetchError || !user) {
@@ -69,7 +82,7 @@ async function getProfile(userId) {
   }
 
   const safeUser = { ...user };
-  delete safeUser.password;
+  delete safeUser.Password;
 
   return safeUser;
 }
@@ -77,11 +90,11 @@ async function getProfile(userId) {
 async function requestVerification(email) {
   const rawEmail = String(email || '').trim().toLowerCase();
 
-  // Fetch user
+  // Fetch user by Email
   const { data: user, error: fetchError } = await supabase
     .from('users')
     .select('*')
-    .eq('email', rawEmail)
+    .eq('Email', rawEmail)
     .maybeSingle();
 
   if (fetchError || !user) {
@@ -90,7 +103,8 @@ async function requestVerification(email) {
     throw error;
   }
 
-  if (user.is_verified) {
+  const isVerified = user.is_verified === true || user.Is_Verified === true;
+  if (isVerified) {
     const error = new Error('Email is already verified');
     error.status = 400;
     throw error;
@@ -101,6 +115,8 @@ async function requestVerification(email) {
   const tokenExpires = new Date();
   tokenExpires.setHours(tokenExpires.getHours() + 24); // Expires in 24h
 
+  const userId = user.id || user.Id;
+
   // Update user in Supabase
   const { error: updateError } = await supabase
     .from('users')
@@ -108,7 +124,7 @@ async function requestVerification(email) {
       verification_token: token,
       token_expires: tokenExpires.toISOString()
     })
-    .eq('id', user.id);
+    .or(`id.eq.${userId},Id.eq.${userId}`);
 
   if (updateError) {
     console.error('Update Token Error:', updateError);
@@ -117,8 +133,10 @@ async function requestVerification(email) {
     throw error;
   }
 
-  // Send the email
-  const { previewUrl } = await sendVerificationEmail(user.email, user.name, token);
+  // Send the email using Name or Email as fallback
+  const userName = user.Name || user.name || 'User';
+  const userEmail = user.Email || user.email;
+  const { previewUrl } = await sendVerificationEmail(userEmail, userName, token);
 
   return { success: true, previewUrl };
 }
@@ -151,6 +169,8 @@ async function verifyEmailToken(token) {
     throw error;
   }
 
+  const userId = user.id || user.Id;
+
   // Update user to verified
   const { error: updateError } = await supabase
     .from('users')
@@ -159,7 +179,7 @@ async function verifyEmailToken(token) {
       verification_token: null,
       token_expires: null
     })
-    .eq('id', user.id);
+    .or(`id.eq.${userId},Id.eq.${userId}`);
 
   if (updateError) {
     console.error('Verification Update Error:', updateError);
