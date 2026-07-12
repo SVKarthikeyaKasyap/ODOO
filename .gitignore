@@ -1,0 +1,25 @@
+# Dependency directories
+node_modules/
+
+# Local env files containing secrets
+.env
+.env.local
+.env.production
+.env.development
+
+# Production outputs
+dist/
+build/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS metadata
+.DS_Store
+Thumbs.db
