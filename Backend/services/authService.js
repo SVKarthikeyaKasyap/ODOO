@@ -7,7 +7,7 @@ async function authenticate(payload) {
   const { email, password } = payload;
   const rawEmail = String(email || '').trim().toLowerCase();
 
-  // Query Supabase for the user with capitalized columns: Email, Password, Blocked, Role, Name
+  // Query Supabase for the user with capitalized column: Email
   const { data: user, error: fetchError } = await supabase
     .from('users')
     .select('*')
@@ -27,7 +27,7 @@ async function authenticate(payload) {
     throw error;
   }
 
-  // Check email verification status (allowing for capitalization just in case)
+  // Check email verification status
   const isVerified = user.is_verified === true || user.is_verified === null || user.Is_Verified === true;
   if (!isVerified) {
     const error = new Error('Email not verified');
@@ -52,10 +52,9 @@ async function authenticate(payload) {
     throw error;
   }
 
-  // Generate JWT token using user details
-  const userId = user.id || user.Id;
+  // Generate JWT token using user details (since Email is the primary key, we sign email as the id claim too)
   const token = require('jsonwebtoken').sign(
-    { id: userId, email: user.Email, role: user.Role },
+    { id: user.Email, email: user.Email, role: user.Role },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRE || '7d' }
   );
@@ -67,12 +66,11 @@ async function authenticate(payload) {
 }
 
 async function getProfile(userId) {
-  // Try lowercase 'id' then capitalized 'Id'
-  let query = supabase.from('users').select('*');
-  
-  // Try querying by standard id
-  const { data: user, error: fetchError } = await query
-    .or(`id.eq.${userId},Id.eq.${userId}`)
+  // Since Email is the primary key, userId will contain the user's Email address
+  const { data: user, error: fetchError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('Email', userId)
     .maybeSingle();
 
   if (fetchError || !user) {
@@ -115,16 +113,14 @@ async function requestVerification(email) {
   const tokenExpires = new Date();
   tokenExpires.setHours(tokenExpires.getHours() + 24); // Expires in 24h
 
-  const userId = user.id || user.Id;
-
-  // Update user in Supabase
+  // Update user in Supabase using Email as the primary key
   const { error: updateError } = await supabase
     .from('users')
     .update({
       verification_token: token,
       token_expires: tokenExpires.toISOString()
     })
-    .or(`id.eq.${userId},Id.eq.${userId}`);
+    .eq('Email', user.Email);
 
   if (updateError) {
     console.error('Update Token Error:', updateError);
@@ -169,9 +165,7 @@ async function verifyEmailToken(token) {
     throw error;
   }
 
-  const userId = user.id || user.Id;
-
-  // Update user to verified
+  // Update user to verified using Email as the primary key
   const { error: updateError } = await supabase
     .from('users')
     .update({
@@ -179,7 +173,7 @@ async function verifyEmailToken(token) {
       verification_token: null,
       token_expires: null
     })
-    .or(`id.eq.${userId},Id.eq.${userId}`);
+    .eq('Email', user.Email);
 
   if (updateError) {
     console.error('Verification Update Error:', updateError);
