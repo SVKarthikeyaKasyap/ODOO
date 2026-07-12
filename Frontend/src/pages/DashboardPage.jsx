@@ -5,6 +5,10 @@ export function DashboardPage() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
 
+  function handleNavigateToVehicles() {
+    navigate('/vehicles')
+  }
+
   async function handleLogout() {
     try {
       await logout()
@@ -22,6 +26,7 @@ export function DashboardPage() {
           <p><strong>Welcome back, {user.name}!</strong></p>
           <p><strong>Email:</strong> {user.email}</p>
           <p><strong>Role:</strong> {user.role}</p>
+          <button onClick={handleNavigateToVehicles}>Vehicle Registry</button>
           <button onClick={handleLogout}>Logout</button>
         </div>
       ) : (

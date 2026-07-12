@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import { ProtectedRoute } from './components/ProtectedRoute.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
 import { DashboardPage } from './pages/DashboardPage.jsx'
+import { VehicleRegistryPage } from './pages/VehicleRegistryPage.jsx'
 
 function App() {
   return (
@@ -17,6 +18,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vehicles"
+              element={
+                <ProtectedRoute>
+                  <VehicleRegistryPage />
                 </ProtectedRoute>
               }
             />

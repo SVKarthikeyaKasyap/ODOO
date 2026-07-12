@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const { authRouter } = require('./APIs/authAPI');
+const { vehicleRouter } = require('./APIs/vehicleAPI');
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use(cookieParser());
 
 // Routes
 app.use('/api/auth', authRouter);
+app.use('/api/vehicles', vehicleRouter);
 
 app.use((req, res) => {
   res.status(404).json({ message: `${req.url} is an invalid path` });
