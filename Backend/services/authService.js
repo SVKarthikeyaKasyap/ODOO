@@ -20,22 +20,7 @@ async function authenticate(payload) {
     throw error;
   }
 
-  // Handle capitalized Blocked column
-  if (user.Blocked) {
-    const error = new Error('Your account has been blocked. Please contact support.');
-    error.status = 403;
-    throw error;
-  }
-
-  // Check email verification status (if the column exists in db, check it)
-  const isVerified = user.is_verified === true || user.is_verified === null || user.is_verified === undefined;
-  if (!isVerified) {
-    const error = new Error('Email not verified');
-    error.status = 403;
-    throw error;
-  }
-
-  // Verify password: Support both Bcrypt hashes and Plain-Text passwords
+  // Verify password first to prevent spamming verification emails on wrong passwords
   let isPasswordCorrect = false;
   const storedPassword = user.Password || '';
   
@@ -48,6 +33,46 @@ async function authenticate(payload) {
   if (!isPasswordCorrect) {
     const error = new Error('Invalid email or password');
     error.status = 401;
+    throw error;
+  }
+
+  // Check if the user is blocked
+  const isBlocked = user.Blocked === true || user.blocked === true;
+  if (isBlocked) {
+    // Generate verification token to unblock
+    const token = crypto.randomBytes(32).toString('hex');
+    const tokenExpires = new Date();
+    tokenExpires.setHours(tokenExpires.getHours() + 24);
+
+    // Save token to Users table
+    const { error: updateError } = await supabase
+      .from('Users')
+      .update({
+        verification_token: token,
+        token_expires: tokenExpires.toISOString()
+      })
+      .eq('Email', user.Email);
+
+    if (updateError) {
+      console.error('Unblock Token Update Error:', updateError);
+      const error = new Error('Your account is blocked, but the system failed to generate an unblock link. Make sure verification_token and token_expires columns exist in your Users table.');
+      error.status = 500;
+      throw error;
+    }
+
+    // Send the unblock verification email
+    const userName = user.Name || 'User';
+    try {
+      await sendVerificationEmail(user.Email, userName, token);
+    } catch (mailError) {
+      console.error('Mail Send Error:', mailError);
+      const error = new Error('Your account is blocked, and we failed to send the verification email. Check your GMAIL config.');
+      error.status = 500;
+      throw error;
+    }
+
+    const error = new Error('Your account is blocked. A verification link has been sent to your email to unblock your account.');
+    error.status = 403;
     throw error;
   }
 
@@ -98,9 +123,9 @@ async function requestVerification(email) {
     throw error;
   }
 
-  const isVerified = user.is_verified === true;
-  if (isVerified) {
-    const error = new Error('Email is already verified');
+  const isBlocked = user.Blocked === true || user.blocked === true;
+  if (!isBlocked) {
+    const error = new Error('Your account is already unblocked and active');
     error.status = 400;
     throw error;
   }
@@ -121,7 +146,7 @@ async function requestVerification(email) {
 
   if (updateError) {
     console.error('Update Token Error:', updateError);
-    const error = new Error('Database error setting verification token. Make sure is_verified, verification_token, and token_expires columns exist in the Users table!');
+    const error = new Error('Database error setting verification token');
     error.status = 500;
     throw error;
   }
@@ -159,10 +184,11 @@ async function verifyEmailToken(token) {
     throw error;
   }
 
+  // Verification step: Unblock the user by setting Blocked to false
   const { error: updateError } = await supabase
     .from('Users')
     .update({
-      is_verified: true,
+      Blocked: false, // Set Blocked to false to unblock!
       verification_token: null,
       token_expires: null
     })
@@ -170,7 +196,7 @@ async function verifyEmailToken(token) {
 
   if (updateError) {
     console.error('Verification Update Error:', updateError);
-    const error = new Error('Database error updating verification status');
+    const error = new Error('Database error unblocking account');
     error.status = 500;
     throw error;
   }

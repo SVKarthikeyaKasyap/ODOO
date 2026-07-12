@@ -8,7 +8,7 @@ export function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [unverifiedEmail, setUnverifiedEmail] = useState('')
+  const [blockedEmail, setBlockedEmail] = useState('')
   const [verificationSuccess, setVerificationSuccess] = useState('')
   const [sendingVerification, setSendingVerification] = useState(false)
 
@@ -16,14 +16,14 @@ export function LoginPage() {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
     setError('')
     setVerificationSuccess('')
-    setUnverifiedEmail('')
+    setBlockedEmail('')
   }
 
   async function handleSubmit(event) {
     event.preventDefault()
     setError('')
     setVerificationSuccess('')
-    setUnverifiedEmail('')
+    setBlockedEmail('')
     setLoading(true)
 
     try {
@@ -32,8 +32,9 @@ export function LoginPage() {
     } catch (err) {
       const msg = err.response?.data?.message || 'Unable to login right now'
       setError(msg)
-      if (msg === 'Email not verified') {
-        setUnverifiedEmail(form.email)
+      // If user is blocked, store their email to allow manual resending
+      if (msg.toLowerCase().includes('blocked')) {
+        setBlockedEmail(form.email)
       }
     } finally {
       setLoading(false)
@@ -46,8 +47,8 @@ export function LoginPage() {
     setError('')
     try {
       const api = (await import('../services/api')).api
-      const response = await api.post('/auth/send-verification', { email: unverifiedEmail })
-      setVerificationSuccess(response.data.message || 'Verification email sent via Gmail SMTP!')
+      const response = await api.post('/auth/send-verification', { email: blockedEmail })
+      setVerificationSuccess(response.data.message || 'Verification email resent via Gmail SMTP!')
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send verification email')
     } finally {
@@ -96,11 +97,11 @@ export function LoginPage() {
         </div>
       </form>
 
-      {unverifiedEmail ? (
+      {blockedEmail ? (
         <div style={{ marginTop: '20px', padding: '10px', border: '1px solid orange', borderRadius: '4px', backgroundColor: '#fffbe6' }}>
-          <p style={{ margin: '0 0 10px 0' }}>Your account is registered but email has not been verified yet.</p>
+          <p style={{ margin: '0 0 10px 0' }}>An unblocking email has been triggered for your account.</p>
           <button onClick={handleResendVerification} disabled={sendingVerification}>
-            {sendingVerification ? 'Sending...' : 'Resend Verification Email'}
+            {sendingVerification ? 'Sending...' : 'Resend Unblocking Email'}
           </button>
         </div>
       ) : null}
