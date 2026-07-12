@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Supabase Connection Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: monospace; background: #0b0f19; color: #eee; padding: 30px; font-size: 14px; }
+        .ok   { color: #10b981; }
+        .err  { color: #ef4444; }
+        .warn { color: #f59e0b; }
+        .info { color: #0ea5e9; }
+        pre   { background: #1f2937; padding: 12px; border-radius: 6px; overflow-x: auto; color: #d1fae5; font-size: 12px; }
+        h2    { color: #0ea5e9; margin-top: 28px; border-bottom: 1px solid #374151; padding-bottom: 6px; }
+        button { background: #0ea5e9; color: white; border: none; padding: 10px 24px;
+                 border-radius: 8px; font-size: 14px; cursor: pointer; margin: 10px 0; }
+        button:hover { background: #0284c7; }
+    </style>
+</head>
+<body>
+<h1 style="color:#fff">🔌 Supabase Live Connection Test</h1>
+<button onclick="runTest()">▶ Run Test</button>
+<div id="out"></div>
+
+<script>
+const SUPABASE_URL  = 'https://fnhkgnbadrajrlpfjahv.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_d8cpzjZRblQcsmE4zyRX_g_1KOjFpVO';
+const TABLES = ['vehicle flow','Vehicle Flow','Vehicle Registration','vehicles','Vehicles'];
+
+function log(msg, cls='') {
+    document.getElementById('out').innerHTML += `<div class="${cls}">${msg}</div>`;
+}
+function clear() { document.getElementById('out').innerHTML = ''; }
+
+async function runTest() {
+    clear();
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    log('<h2>1. Supabase Client Created</h2>');
+    log(`URL: ${SUPABASE_URL}`, 'info');
+    log(`KEY: ${SUPABASE_KEY.substring(0,30)}...`, 'info');
+
+    log('<h2>2. Testing Each Table Name</h2>');
+    let foundTable = null;
+    let foundData  = null;
+
+    for (const t of TABLES) {
+        log(`<br>Testing: <b>"${t}"</b> ...`, 'info');
+        const { data, error, status, statusText } = await client.from(t).select('*');
+
+        log(`HTTP Status: ${status} ${statusText}`);
+
+        if (error) {
+            log(`❌ ERROR → code: ${error.code} | message: ${error.message}`, 'err');
+        } else {
+            log(`✅ NO ERROR → rows returned: ${data ? data.length : 'null'}`, 'ok');
+            if (data && data.length > 0) {
+                foundTable = t;
+                foundData  = data;
+                log(`🎯 DATA FOUND in table: <b>"${t}"</b>`, 'ok');
+            } else {
+                log(`⚠️ Query succeeded but returned 0 rows → RLS is blocking SELECT`, 'warn');
+            }
+        }
+    }
+
+    if (!foundData) {
+        log('<h2 class="err">❌ RESULT: Could not read any data</h2>');
+        log('Most likely cause: <b>RLS (Row Level Security)</b> is enabled with no SELECT policy for the anon role.', 'warn');
+        log('<br>Fix in Supabase:', 'warn');
+        log('1. Open your table in Supabase dashboard', 'warn');
+        log('2. Click the <b>RLS</b> button at the top', 'warn');
+        log('3. Click <b>Add Policy</b>', 'warn');
+        log('4. Choose: <b>"Enable read access for all users"</b>', 'warn');
+        log('5. Save and re-run this test', 'warn');
+        return;
+    }
+
+    log(`<h2 class="ok">✅ RESULT: Data found in table "${foundTable}"</h2>`);
+    log(`Total rows: ${foundData.length}`, 'ok');
+
+    log('<h2>3. Raw Data From Supabase</h2>');
+    log('<pre>' + JSON.stringify(foundData, null, 2) + '</pre>');
+
+    log('<h2>4. Column Names Detected</h2>');
+    const cols = Object.keys(foundData[0]);
+    log(cols.map(c => `"${c}"`).join(', '), 'info');
+
+    log('<h2>5. Vehicle Status Summary</h2>');
+    foundData.forEach(row => {
+        const status = row.status || '(null)';
+        const cur = row['Current Location'] || '⚠️ EMPTY';
+        const start = row['Start Location'] || '⚠️ EMPTY';
+        const color = status.toLowerCase().includes('active') ? '#ef4444'
+                    : status.toLowerCase().includes('avail') ? '#10b981' : '#9ca3af';
+        log(`<span style="color:${color}">■</span> <b>${row.name}</b> | status: <b>${status}</b> | Current Location: "${cur}" | Start Location: "${start}"`);
+    });
+
+    log('<h2>6. Gemini API Test</h2>');
+    const activeRow = foundData.find(r => (r.status||'').toLowerCase() === 'active');
+    if (!activeRow) {
+        log('ℹ️ No active vehicle found to test Gemini', 'warn');
+    } else {
+        log(`Testing Gemini for: <b>${activeRow.name}</b>`, 'info');
+        const GEMINI = ''; // REMOVED FOR PUSH
+        const prompt = `A vehicle left "${activeRow['Start Location']}" heading to "${activeRow['End Location']}". What city is it near now? Reply with ONE city name only.`;
+        try {
+            const res = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI}`,
+                { method:'POST', headers:{'Content-Type':'application/json'},
+                  body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] }) }
+            );
+            const json = await res.json();
+            if (json.error) {
+                log(`❌ Gemini error: ${json.error.message}`, 'err');
+                log(`ℹ️ The Gemini key may be invalid or expired`, 'warn');
+            } else if (json.candidates) {
+                const result = json.candidates[0].content.parts[0].text.trim();
+                log(`✅ Gemini works! Response: <b>"${result}"</b>`, 'ok');
+            }
+        } catch(e) { log(`❌ Gemini fetch failed: ${e.message}`, 'err'); }
+    }
+
+    log('<br><b style="color:#10b981">✅ Test complete. Share a screenshot if there are red/orange warnings.</b>');
+}
+</script>
+</body>
+</html>
