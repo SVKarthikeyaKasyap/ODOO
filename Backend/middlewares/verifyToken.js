@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const UserModel = require('../models/UserModel');
+const supabase = require('../services/supabaseClient');
 
 async function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -15,7 +15,12 @@ async function verifyToken(req, res, next) {
     req.user = jwt.verify(token, process.env.JWT_SECRET);
     
     // Check if user is blocked
-    const user = await UserModel.findById(req.user.id);
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('blocked')
+      .eq('id', req.user.id)
+      .maybeSingle();
+
     if (user && user.blocked) {
       return res.status(403).json({ message: 'Your account has been blocked' });
     }
