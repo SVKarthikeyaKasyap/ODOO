@@ -8,8 +8,9 @@ const { authRouter } = require('./APIs/authAPI');
 
 const app = express();
 
-// Middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
 
 const allowedOrigins = [
   'http://localhost:5173',
