@@ -3,7 +3,6 @@ const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
-const mongoose = require('mongoose');
 
 const { authRouter } = require('./APIs/authAPI');
 
@@ -35,16 +34,6 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-
-// MongoDB Connection
-const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/transitops';
-
-console.log(`Connecting to MongoDB URI: ${mongoUri}`);
-
-mongoose
-  .connect(mongoUri)
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.log('MongoDB connection error:', err));
 
 // Routes
 app.use('/api/auth', authRouter);
