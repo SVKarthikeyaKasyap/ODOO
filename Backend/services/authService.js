@@ -7,9 +7,9 @@ async function authenticate(payload) {
   const { email, password } = payload;
   const rawEmail = String(email || '').trim().toLowerCase();
 
-  // Query Supabase for the user with capitalized column: Email
+  // Query Supabase for the user with capitalized table: Users and column: Email
   const { data: user, error: fetchError } = await supabase
-    .from('users')
+    .from('Users')
     .select('*')
     .eq('Email', rawEmail)
     .maybeSingle();
@@ -68,7 +68,7 @@ async function authenticate(payload) {
 async function getProfile(userId) {
   // Since Email is the primary key, userId will contain the user's Email address
   const { data: user, error: fetchError } = await supabase
-    .from('users')
+    .from('Users')
     .select('*')
     .eq('Email', userId)
     .maybeSingle();
@@ -90,7 +90,7 @@ async function requestVerification(email) {
 
   // Fetch user by Email
   const { data: user, error: fetchError } = await supabase
-    .from('users')
+    .from('Users')
     .select('*')
     .eq('Email', rawEmail)
     .maybeSingle();
@@ -115,7 +115,7 @@ async function requestVerification(email) {
 
   // Update user in Supabase using Email as the primary key
   const { error: updateError } = await supabase
-    .from('users')
+    .from('Users')
     .update({
       verification_token: token,
       token_expires: tokenExpires.toISOString()
@@ -146,7 +146,7 @@ async function verifyEmailToken(token) {
 
   // Find user with token
   const { data: user, error: fetchError } = await supabase
-    .from('users')
+    .from('Users')
     .select('*')
     .eq('verification_token', token)
     .maybeSingle();
@@ -167,7 +167,7 @@ async function verifyEmailToken(token) {
 
   // Update user to verified using Email as the primary key
   const { error: updateError } = await supabase
-    .from('users')
+    .from('Users')
     .update({
       is_verified: true,
       verification_token: null,

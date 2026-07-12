@@ -14,9 +14,9 @@ async function verifyToken(req, res, next) {
   try {
     req.user = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Check if user is blocked using Email (which is the primary key)
+    // Check if user is blocked using Email on the capitalized 'Users' table
     const { data: user, error } = await supabase
-      .from('users')
+      .from('Users')
       .select('*')
       .eq('Email', req.user.email)
       .maybeSingle();
