@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import { ProtectedRoute } from './components/ProtectedRoute.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
 import { DashboardPage } from './pages/DashboardPage.jsx'
+import { VerifyEmailPage } from './pages/VerifyEmailPage.jsx'
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
           <h1>TransitOps Portal</h1>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route
               path="/dashboard"
               element={
