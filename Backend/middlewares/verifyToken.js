@@ -15,11 +15,19 @@ async function verifyToken(req, res, next) {
     req.user = jwt.verify(token, process.env.JWT_SECRET);
     
     // Check if user is blocked
+    console.log("=== DEBUG VERIFYTOKEN ===");
+    console.log("Checking if user is blocked, ID:", req.user.id);
+    console.log("Using table: 'Users'");
+    
     const { data: user, error } = await supabase
-      .from('users')
+      .from('Users')
       .select('blocked')
       .eq('id', req.user.id)
       .maybeSingle();
+
+    console.log("Blocked check error:", error);
+    console.log("Blocked check user:", user);
+    console.log("=== END DEBUG ===");
 
     if (user && user.blocked) {
       return res.status(403).json({ message: 'Your account has been blocked' });

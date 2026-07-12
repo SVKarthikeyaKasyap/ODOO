@@ -1,10 +1,9 @@
 const express = require('express');
 const { getAllVehicles, getVehicleById, createVehicle, updateVehicle, deleteVehicle } = require('../services/vehicleService');
-const { verifyToken } = require('../middlewares/verifyToken');
 
 const vehicleRouter = express.Router();
 
-vehicleRouter.get('/', verifyToken, async (req, res, next) => {
+vehicleRouter.get('/', async (req, res, next) => {
   try {
     const payload = await getAllVehicles();
     res.status(200).json({ message: 'Vehicles fetched', payload });
@@ -13,7 +12,7 @@ vehicleRouter.get('/', verifyToken, async (req, res, next) => {
   }
 });
 
-vehicleRouter.get('/:id', verifyToken, async (req, res, next) => {
+vehicleRouter.get('/:id', async (req, res, next) => {
   try {
     const payload = await getVehicleById(req.params.id);
     res.status(200).json({ message: 'Vehicle fetched', payload });
@@ -22,7 +21,7 @@ vehicleRouter.get('/:id', verifyToken, async (req, res, next) => {
   }
 });
 
-vehicleRouter.post('/', verifyToken, async (req, res, next) => {
+vehicleRouter.post('/', async (req, res, next) => {
   try {
     const payload = await createVehicle(req.body);
     res.status(201).json({ message: 'Vehicle created', payload });
@@ -31,7 +30,7 @@ vehicleRouter.post('/', verifyToken, async (req, res, next) => {
   }
 });
 
-vehicleRouter.put('/:id', verifyToken, async (req, res, next) => {
+vehicleRouter.put('/:id', async (req, res, next) => {
   try {
     const payload = await updateVehicle(req.params.id, req.body);
     res.status(200).json({ message: 'Vehicle updated', payload });
@@ -40,7 +39,7 @@ vehicleRouter.put('/:id', verifyToken, async (req, res, next) => {
   }
 });
 
-vehicleRouter.delete('/:id', verifyToken, async (req, res, next) => {
+vehicleRouter.delete('/:id', async (req, res, next) => {
   try {
     const payload = await deleteVehicle(req.params.id);
     res.status(200).json({ message: 'Vehicle deleted', payload });

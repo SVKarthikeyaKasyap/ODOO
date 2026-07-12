@@ -2,7 +2,7 @@ const supabase = require('./supabaseClient');
 
 async function getAllVehicles() {
   const { data: vehicles, error: fetchError } = await supabase
-    .from('vehicles')
+    .from('Vehicle Registry')
     .select('*');
 
   if (fetchError) {
@@ -15,11 +15,11 @@ async function getAllVehicles() {
   return vehicles;
 }
 
-async function getVehicleById(id) {
+async function getVehicleById(registrationNumber) {
   const { data: vehicle, error: fetchError } = await supabase
-    .from('vehicles')
+    .from('Vehicle Registry')
     .select('*')
-    .eq('id', id)
+    .eq('Registration Number', registrationNumber)
     .maybeSingle();
 
   if (fetchError) {
@@ -40,7 +40,7 @@ async function getVehicleById(id) {
 
 async function createVehicle(payload) {
   const { data: newVehicle, error: insertError } = await supabase
-    .from('vehicles')
+    .from('Vehicle Registry')
     .insert([payload])
     .select()
     .single();
@@ -55,11 +55,11 @@ async function createVehicle(payload) {
   return newVehicle;
 }
 
-async function updateVehicle(id, payload) {
+async function updateVehicle(registrationNumber, payload) {
   const { data: updatedVehicle, error: updateError } = await supabase
-    .from('vehicles')
+    .from('Vehicle Registry')
     .update(payload)
-    .eq('id', id)
+    .eq('Registration Number', registrationNumber)
     .select()
     .single();
 
@@ -73,11 +73,11 @@ async function updateVehicle(id, payload) {
   return updatedVehicle;
 }
 
-async function deleteVehicle(id) {
+async function deleteVehicle(registrationNumber) {
   const { data: deletedVehicle, error: deleteError } = await supabase
-    .from('vehicles')
+    .from('Vehicle Registry')
     .delete()
-    .eq('id', id)
+    .eq('Registration Number', registrationNumber)
     .select()
     .single();
 
