@@ -1,17 +1,17 @@
-import { useEffect, useState } from 'react'
-import { api } from '../services/api'
-import './DriverManagement.css'
+import { useEffect, useState } from 'react';
+import { api } from './services/api';
+import './DriverManagement.css';
 
 export function DriverManagement() {
-  const [drivers, setDrivers] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [drivers, setDrivers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   // Modals state
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [editingDriver, setEditingDriver] = useState(null)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingDriver, setEditingDriver] = useState(null);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -22,43 +22,43 @@ export function DriverManagement() {
     Contact_Number: '',
     Safety_Score: 100,
     Status: 'Available'
-  })
+  });
 
   // Load all drivers
   async function fetchDrivers() {
     try {
-      setLoading(true)
-      const response = await api.get('/drivers')
-      setDrivers(response.data.payload || [])
+      setLoading(true);
+      const response = await api.get('/drivers');
+      setDrivers(response.data.payload || []);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch drivers')
+      setError(err.response?.data?.message || 'Failed to fetch drivers. Make sure your backend server is running on http://localhost:5001!');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   useEffect(() => {
-    fetchDrivers()
-  }, [])
+    fetchDrivers();
+  }, []);
 
   function handleInputChange(e) {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value
-    }))
+    }));
   }
 
   // Handle Add Driver
   async function handleAddSubmit(e) {
-    e.preventDefault()
-    setError('')
-    setSuccess('')
+    e.preventDefault();
+    setError('');
+    setSuccess('');
 
     try {
-      const response = await api.post('/drivers', formData)
-      setSuccess(response.data.message || 'Driver profile created!')
-      setIsAddModalOpen(false)
+      const response = await api.post('/drivers', formData);
+      setSuccess(response.data.message || 'Driver profile created!');
+      setIsAddModalOpen(false);
       // Reset form
       setFormData({
         Name: '',
@@ -68,16 +68,16 @@ export function DriverManagement() {
         Contact_Number: '',
         Safety_Score: 100,
         Status: 'Available'
-      })
-      fetchDrivers()
+      });
+      fetchDrivers();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add driver')
+      setError(err.response?.data?.message || 'Failed to add driver');
     }
   }
 
   // Handle Edit Trigger
   function openEditModal(driver) {
-    setEditingDriver(driver)
+    setEditingDriver(driver);
     setFormData({
       Name: driver.Name || '',
       License_Number: driver.License_Number || '',
@@ -86,56 +86,56 @@ export function DriverManagement() {
       Contact_Number: driver.Contact_Number || '',
       Safety_Score: driver.Safety_Score ?? 100,
       Status: driver.Status || 'Available'
-    })
-    setIsEditModalOpen(true)
+    });
+    setIsEditModalOpen(true);
   }
 
   // Handle Edit Submit
   async function handleEditSubmit(e) {
-    e.preventDefault()
-    setError('')
-    setSuccess('')
+    e.preventDefault();
+    setError('');
+    setSuccess('');
 
     try {
-      const response = await api.put(`/drivers/${editingDriver.Id}`, formData)
-      setSuccess(response.data.message || 'Driver profile updated!')
-      setIsEditModalOpen(false)
-      setEditingDriver(null)
-      fetchDrivers()
+      const response = await api.put(`/drivers/${editingDriver.Id}`, formData);
+      setSuccess(response.data.message || 'Driver profile updated!');
+      setIsEditModalOpen(false);
+      setEditingDriver(null);
+      fetchDrivers();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update driver')
+      setError(err.response?.data?.message || 'Failed to update driver');
     }
   }
 
   // Handle Delete Driver
   async function handleDelete(id) {
-    if (!window.confirm('Are you sure you want to delete this driver profile?')) return
+    if (!window.confirm('Are you sure you want to delete this driver profile?')) return;
 
-    setError('')
-    setSuccess('')
+    setError('');
+    setSuccess('');
 
     try {
-      const response = await api.delete(`/drivers/${id}`)
-      setSuccess(response.data.message || 'Driver deleted successfully!')
-      fetchDrivers()
+      const response = await api.delete(`/drivers/${id}`);
+      setSuccess(response.data.message || 'Driver deleted successfully!');
+      fetchDrivers();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to delete driver')
+      setError(err.response?.data?.message || 'Failed to delete driver');
     }
   }
 
   function getScoreClass(score) {
-    if (score >= 90) return 'score-high'
-    if (score >= 70) return 'score-medium'
-    return 'score-low'
+    if (score >= 90) return 'score-high';
+    if (score >= 70) return 'score-medium';
+    return 'score-low';
   }
 
   function getStatusClass(status) {
     switch (status) {
-      case 'Available': return 'status-available'
-      case 'On Trip': return 'status-on-trip'
-      case 'Off Duty': return 'status-off-duty'
-      case 'Suspended': return 'status-suspended'
-      default: return ''
+      case 'Available': return 'status-available';
+      case 'On Trip': return 'status-on-trip';
+      case 'Off Duty': return 'status-off-duty';
+      case 'Suspended': return 'status-suspended';
+      default: return '';
     }
   }
 
@@ -407,5 +407,5 @@ export function DriverManagement() {
         </div>
       )}
     </div>
-  )
+  );
 }

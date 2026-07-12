@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
-import { DriverManagement } from '../components/DriverManagement.jsx'
+import { DriverManagement } from '../components/diver_management/DriverManagement.jsx'
 import './DashboardPage.css'
 
 export function DashboardPage() {
